@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafetyTrack - Panel de Administración</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- PANTALLA DE LOGIN -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="logo-icon">🔐</div>
+                <h2>Panel de Administración</h2>
+                <p>Ingresa tus credenciales</p>
+            </div>
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label>Usuario</label>
+                    <input type="text" id="username" autocomplete="username" placeholder="Ingresa tu usuario" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="password" autocomplete="current-password" placeholder="Ingresa tu contraseña" required>
+                </div>
+                <button type="submit" class="btn-primary">Iniciar Sesión</button>
+                <div id="login-error" class="login-error" style="display: none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DASHBOARD (OCULTO HASTA LOGIN) -->
+    <div id="admin-panel" class="app" style="display: none;">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-title">
+                    <div class="logo">
+                        <div class="logo-icon">⚠️</div>
+                        <span class="logo-text">SafetyTrack Admin</span>
+                    </div>
+                    <p class="subtitle">Panel de Gestión de Seguridad Industrial</p>
+                </div>
+                <nav class="nav">
+                    <button class="nav-btn active" onclick="showView('dashboard')">Dashboard</button>
+                    <button class="nav-btn" onclick="showView('form')">+ Nuevo Reporte</button>
+                    <button class="nav-btn logout-btn" onclick="logout()">Cerrar Sesión</button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main class="main">
+            <!-- DASHBOARD VIEW -->
+            <div id="dashboard-view" class="view active">
+                <!-- ESTADÍSTICAS -->
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card total">
+                        <div class="stat-value" id="stat-total">0</div>
+                        <div class="stat-label">Total Reportes</div>
+                    </div>
+                    <div class="stat-card pending">
+                        <div class="stat-value" id="stat-pending">0</div>
+                        <div class="stat-label">Pendientes</div>
+                    </div>
+                    <div class="stat-card progress">
+                        <div class="stat-value" id="stat-progress">0</div>
+                        <div class="stat-label">En Proceso</div>
+                    </div>
+                    <div class="stat-card resolved">
+                        <div class="stat-value" id="stat-resolved">0</div>
+                        <div class="stat-label">Resueltos</div>
+                    </div>
+                </div>
+
+                <!-- FILTROS -->
+                <div class="filters">
+                    <button class="filter-btn active" onclick="filterReports('all')">Todos</button>
+                    <button class="filter-btn" onclick="filterReports('acto_inseguro')">Actos Inseguros</button>
+                    <button class="filter-btn" onclick="filterReports('apercibimiento')">Apercibimientos</button>
+                    <button class="filter-btn" onclick="filterReports('falla_calidad')">Fallas de Calidad</button>
+                    <button class="filter-btn" onclick="filterReports('otro')">Otros</button>
+                </div>
+
+                <!-- LISTA DE REPORTES -->
+                <div class="reports-list" id="reports-list">
+                    <div class="loading">Cargando reportes...</div>
+                </div>
+            </div>
+
+            <!-- FORM VIEW -->
+            <div id="form-view" class="view">
+                <div class="form-container">
+                    <div class="form-header">
+                        <h2>Nuevo Reporte</h2>
+                        <p>Completa la información del incidente</p>
+                    </div>
+                    
+                    <form id="report-form" class="report-form">
+                        <div class="form-group">
+                            <label>Tipo de Reporte *</label>
+                            <select id="tipo" name="tipo" required>
+                                <option value="acto_inseguro">Acto Inseguro</option>
+                                <option value="apercibimiento">Apercibimiento Oral</option>
+                                <option value="falla_calidad">Falla de Calidad</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Área *</label>
+                                <select id="area" name="area" required>
+                                    <option value="">Seleccionar área</option>
+                                    <option value="Producción Línea 1">Producción Línea 1</option>
+                                    <option value="Producción Línea 2">Producción Línea 2</option>
+                                    <option value="Producción Línea 3">Producción Línea 3</option>
+                                    <option value="Almacén">Almacén</option>
+                                    <option value="Mantenimiento">Mantenimiento</option>
+                                    <option value="Control de Calidad">Control de Calidad</option>
+                                    <option value="Logística">Logística</option>
+                                    <option value="Administración">Administración</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Empleado Involucrado *</label>
+                                <input type="text" id="empleado" name="empleado" placeholder="Nombre o ID del empleado" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Gravedad *</label>
+                            <div class="severity-options">
+                                <label class="severity-option">
+                                    <input type="radio" name="gravedad" value="baja">
+                                    <span class="severity-label baja">Baja</span>
+                                </label>
+                                <label class="severity-option">
+                                    <input type="radio" name="gravedad" value="media" checked>
+                                    <span class="severity-label media">Media</span>
+                                </label>
+                                <label class="severity-option">
+                                    <input type="radio" name="gravedad" value="alta">
+                                    <span class="severity-label alta">Alta</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Descripción del Incidente *</label>
+                            <textarea id="descripcion" name="descripcion" placeholder="Describe lo sucedido con el mayor detalle posible..." rows="6" required></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary" onclick="showView('dashboard')">Cancelar</button>
+                            <button type="submit" class="btn-primary">Guardar Reporte</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- SUPABASE CLIENT -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- ADMIN SCRIPT -->
+    <script src="admin.js"></script>
+</body>
+</html>
