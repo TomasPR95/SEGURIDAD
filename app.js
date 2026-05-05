@@ -5,6 +5,7 @@
 const SUPABASE_URL = 'https://dpzdlwwfvjoggejkaeiw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwemRsd3dmdmpvZ2dlamthZWl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTQ1MTYsImV4cCI6MjA5MzU3MDUxNn0.2oSGq1RgelrXimeg8WuO6lc0RYUFeBq-5hWy3ZccN2c';
 
+
 // Inicializar cliente de Supabase
 var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -12,8 +13,45 @@ var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // INICIALIZACIÓN
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
+    loadFormOptions();
     setupForm();
 });
+
+// ============================================
+// CARGAR OPCIONES DEL FORMULARIO
+// ============================================
+async function loadFormOptions() {
+    // Cargar tipos de reporte
+    const { data: tipos, error: errorTipos } = await supabase
+        .from('tipos_reporte')
+        .select('*')
+        .eq('activo', true)
+        .order('orden', { ascending: true });
+    
+    const tipoSelect = document.getElementById('tipo');
+    if (tipos && tipos.length > 0) {
+        tipoSelect.innerHTML = tipos.map(t => 
+            `<option value="${t.codigo}">${t.nombre}</option>`
+        ).join('');
+    } else {
+        tipoSelect.innerHTML = '<option value="">No hay tipos disponibles</option>';
+    }
+    
+    // Cargar áreas
+    const { data: areas, error: errorAreas } = await supabase
+        .from('areas')
+        .select('*')
+        .eq('activo', true)
+        .order('orden', { ascending: true});
+    
+    const areaSelect = document.getElementById('area');
+    if (areas && areas.length > 0) {
+        areaSelect.innerHTML = '<option value="">Seleccionar área</option>' + 
+            areas.map(a => `<option value="${a.nombre}">${a.nombre}</option>`).join('');
+    } else {
+        areaSelect.innerHTML = '<option value="">No hay áreas disponibles</option>';
+    }
+}
 
 // ============================================
 // CONFIGURAR FORMULARIO
