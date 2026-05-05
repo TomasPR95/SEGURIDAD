@@ -2,7 +2,9 @@
 // CONFIGURACIÓN DE SUPABASE
 // ============================================
 const SUPABASE_URL = 'https://dpzdlwwfvjoggejkaeiw.supabase.co';
+
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwemRsd3dmdmpvZ2dlamthZWl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTQ1MTYsImV4cCI6MjA5MzU3MDUxNn0.2oSGq1RgelrXimeg8WuO6lc0RYUFeBq-5hWy3ZccN2c';
+
 
 // Inicializar cliente de Supabase
 var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -102,6 +104,13 @@ function showView(viewName) {
         document.querySelector('.nav-btn:first-child').classList.add('active');
     } else if (viewName === 'form') {
         document.querySelectorAll('.nav-btn')[1].classList.add('active');
+        // Cargar opciones dinámicas del formulario
+        loadFormOptions();
+    } else if (viewName === 'config') {
+        document.querySelectorAll('.nav-btn')[2].classList.add('active');
+        // Cargar datos de configuración
+        loadAreas();
+        loadTipos();
     }
 }
 
@@ -386,3 +395,237 @@ function showSuccess(message) {
     alert('✅ ' + message);
 }
 
+// ============================================
+// GESTIÓN DE CONFIGURACIÓN
+// ============================================
+
+// Cargar áreas desde Supabase
+async function loadAreas() {
+    try {
+        const { data, error } = await supabase
+            .from('areas')
+            .select('*')
+            .eq('activo', true)
+            .order('orden', { ascending: true });
+        
+        if (error) {
+            console.error('Error al cargar áreas:', error);
+            return;
+        }
+        
+        const areasList = document.getElementById('areas-list');
+        if (!areasList) return;
+        
+        if (data.length === 0) {
+            areasList.innerHTML = '<p style="color: var(--color-text-secondary);">No hay áreas configuradas</p>';
+            return;
+        }
+        
+        areasList.innerHTML = data.map(area => `
+            <div class="config-item">
+                <span>${area.nombre}</span>
+                <div class="config-item-actions">
+                    <button class="btn-small btn-edit" onclick="editArea(${area.id}, '${area.nombre.replace(/'/g, "\\'")}')">Editar</button>
+                    <button class="btn-small btn-remove" onclick="deleteArea(${area.id}, '${area.nombre.replace(/'/g, "\\'")}')">Eliminar</button>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Cargar tipos de reporte
+async function loadTipos() {
+    try {
+        const { data, error } = await supabase
+            .from('tipos_reporte')
+            .select('*')
+            .eq('activo', true)
+            .order('orden', { ascending: true });
+        
+        if (error) {
+            console.error('Error al cargar tipos:', error);
+            return;
+        }
+        
+        const tiposList = document.getElementById('tipos-list');
+        if (!tiposList) return;
+        
+        if (data.length === 0) {
+            tiposList.innerHTML = '<p style="color: var(--color-text-secondary);">No hay tipos configurados</p>';
+            return;
+        }
+        
+        tiposList.innerHTML = data.map(tipo => `
+            <div class="config-item">
+                <div>
+                    <strong>${tipo.nombre}</strong>
+                    <br><small style="color: var(--color-text-secondary);">Código: ${tipo.codigo}</small>
+                </div>
+                <div class="config-item-actions">
+                    <button class="btn-small btn-edit" onclick="editTipo(${tipo.id}, '${tipo.codigo}', '${tipo.nombre.replace(/'/g, "\\'")}')">Editar</button>
+                    <button class="btn-small btn-remove" onclick="deleteTipo(${tipo.id}, '${tipo.nombre.replace(/'/g, "\\'")}')">Eliminar</button>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Agregar área
+function addArea() {
+    const nombre = prompt('Nombre del área:');
+    if (!nombre || nombre.trim() === '') return;
+    
+    supabase
+        .from('areas')
+        .insert([{ nombre: nombre.trim() }])
+        .then(({ error }) => {
+            if (error) {
+                alert('❌ Error al agregar área: ' + error.message);
+            } else {
+                alert('✅ Área agregada correctamente');
+                loadAreas();
+            }
+        });
+}
+
+// Editar área
+function editArea(id, nombreActual) {
+    const nuevoNombre = prompt('Nuevo nombre del área:', nombreActual);
+    if (!nuevoNombre || nuevoNombre.trim() === '') return;
+    if (nuevoNombre === nombreActual) return;
+    
+    supabase
+        .from('areas')
+        .update({ nombre: nuevoNombre.trim() })
+        .eq('id', id)
+        .then(({ error }) => {
+            if (error) {
+                alert('❌ Error al actualizar área: ' + error.message);
+            } else {
+                alert('✅ Área actualizada correctamente');
+                loadAreas();
+            }
+        });
+}
+
+// Eliminar área
+function deleteArea(id, nombre) {
+    if (!confirm(`¿Eliminar el área "${nombre}"?\n\nEsto no eliminará los reportes existentes, solo ocultará el área del formulario.`)) {
+        return;
+    }
+    
+    supabase
+        .from('areas')
+        .update({ activo: false })
+        .eq('id', id)
+        .then(({ error }) => {
+            if (error) {
+                alert('❌ Error al eliminar área: ' + error.message);
+            } else {
+                alert('✅ Área eliminada correctamente');
+                loadAreas();
+            }
+        });
+}
+
+// Agregar tipo
+function addTipo() {
+    const nombre = prompt('Nombre del tipo de reporte:');
+    if (!nombre || nombre.trim() === '') return;
+    
+    const codigo = prompt('Código del tipo (sin espacios, ej: falla_maquinaria):');
+    if (!codigo || codigo.trim() === '') return;
+    
+    supabase
+        .from('tipos_reporte')
+        .insert([{ 
+            codigo: codigo.trim().toLowerCase().replace(/ /g, '_'),
+            nombre: nombre.trim() 
+        }])
+        .then(({ error }) => {
+            if (error) {
+                alert('❌ Error al agregar tipo: ' + error.message);
+            } else {
+                alert('✅ Tipo agregado correctamente');
+                loadTipos();
+            }
+        });
+}
+
+// Editar tipo
+function editTipo(id, codigoActual, nombreActual) {
+    const nuevoNombre = prompt('Nuevo nombre del tipo:', nombreActual);
+    if (!nuevoNombre || nuevoNombre.trim() === '') return;
+    if (nuevoNombre === nombreActual) return;
+    
+    supabase
+        .from('tipos_reporte')
+        .update({ nombre: nuevoNombre.trim() })
+        .eq('id', id)
+        .then(({ error }) => {
+            if (error) {
+                alert('❌ Error al actualizar tipo: ' + error.message);
+            } else {
+                alert('✅ Tipo actualizado correctamente');
+                loadTipos();
+            }
+        });
+}
+
+// Eliminar tipo
+function deleteTipo(id, nombre) {
+    if (!confirm(`¿Eliminar el tipo "${nombre}"?\n\nEsto no eliminará los reportes existentes, solo ocultará el tipo del formulario.`)) {
+        return;
+    }
+    
+    supabase
+        .from('tipos_reporte')
+        .update({ activo: false })
+        .eq('id', id)
+        .then(({ error }) => {
+            if (error) {
+                alert('❌ Error al eliminar tipo: ' + error.message);
+            } else {
+                alert('✅ Tipo eliminado correctamente');
+                loadTipos();
+            }
+        });
+}
+
+// ============================================
+// CARGAR OPCIONES DINÁMICAS EN FORMULARIO
+// ============================================
+async function loadFormOptions() {
+    // Cargar tipos de reporte
+    const { data: tipos } = await supabase
+        .from('tipos_reporte')
+        .select('*')
+        .eq('activo', true)
+        .order('orden', { ascending: true});
+    
+    const tipoSelect = document.getElementById('tipo');
+    if (tipoSelect && tipos && tipos.length > 0) {
+        tipoSelect.innerHTML = tipos.map(t => 
+            `<option value="${t.codigo}">${t.nombre}</option>`
+        ).join('');
+    }
+    
+    // Cargar áreas
+    const { data: areas } = await supabase
+        .from('areas')
+        .select('*')
+        .eq('activo', true)
+        .order('orden', { ascending: true});
+    
+    const areaSelect = document.getElementById('area');
+    if (areaSelect && areas && areas.length > 0) {
+        areaSelect.innerHTML = '<option value="">Seleccionar área</option>' + 
+            areas.map(a => `<option value="${a.nombre}">${a.nombre}</option>`).join('');
+    }
+}
