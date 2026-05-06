@@ -2,9 +2,7 @@
 // CONFIGURACIÓN DE SUPABASE
 // ============================================
 const SUPABASE_URL = 'https://dpzdlwwfvjoggejkaeiw.supabase.co';
-
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwemRsd3dmdmpvZ2dlamthZWl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTQ1MTYsImV4cCI6MjA5MzU3MDUxNn0.2oSGq1RgelrXimeg8WuO6lc0RYUFeBq-5hWy3ZccN2c';
-
 
 // Inicializar cliente de Supabase
 var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -187,8 +185,8 @@ function renderReports() {
                     <span class="type-badge ${report.tipo}">
                         ${formatTipo(report.tipo)}
                     </span>
-                    <span class="severity-badge ${report.gravedad}">
-                        ${report.gravedad}
+                    <span class="severity-badge ${report.tipo_accion || 'llamado_atencion'}">
+                        ${report.tipo_accion === 'reconocimiento' ? '✅ Reconocimiento' : '⚠️ Llamado de Atención'}
                     </span>
                 </div>
                 <div class="report-date">
@@ -318,7 +316,7 @@ function setupForm() {
             area: formData.get('area'),
             empleado: formData.get('empleado'),
             descripcion: formData.get('descripcion'),
-            gravedad: formData.get('gravedad'),
+            tipo_accion: formData.get('tipo_accion'),
             estado: 'pendiente'
         };
         
@@ -629,3 +627,4 @@ async function loadFormOptions() {
             areas.map(a => `<option value="${a.nombre}">${a.nombre}</option>`).join('');
     }
 }
+
