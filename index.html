@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafetyTrack - Reportar Incidente</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-title">
+                    <div class="logo">
+                        <div class="logo-icon">⚠️</div>
+                        <span class="logo-text">SafetyTrack</span>
+                    </div>
+                    <p class="subtitle">Reportar Incidente de Seguridad</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main class="main">
+            <div class="form-container">
+                <div class="form-header">
+                    <h2>Nuevo Reporte</h2>
+                    <p>Completa la información del incidente</p>
+                </div>
+                
+                <form id="report-form" class="report-form">
+                    <div class="form-group">
+                        <label>¿Qué deseas reportar? *</label>
+                        <div class="severity-options">
+                            <label class="severity-option">
+                                <input type="radio" name="tipo_accion" value="reconocimiento" checked>
+                                <span class="severity-label baja">✅ Reconocimiento</span>
+                            </label>
+                            <label class="severity-option">
+                                <input type="radio" name="tipo_accion" value="llamado_atencion">
+                                <span class="severity-label alta">⚠️ Llamado de Atención</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tipo de Reporte *</label>
+                        <select id="tipo" name="tipo" required>
+                            <option value="">Cargando...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Área *</label>
+                            <select id="area" name="area" required>
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Empleado Involucrado *</label>
+                            <input type="text" id="empleado" name="empleado" placeholder="Nombre o ID del empleado" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Descripción *</label>
+                        <textarea id="descripcion" name="descripcion" placeholder="Describe lo sucedido con el mayor detalle posible..." rows="6" required></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="reset" class="btn-secondary">Limpiar</button>
+                        <button type="submit" class="btn-primary">Enviar Reporte</button>
+                    </div>
+                </form>
+
+                <!-- Mensaje de éxito -->
+                <div id="success-message" class="success-message" style="display: none;">
+                    <div class="success-icon">✅</div>
+                    <h3>Reporte enviado exitosamente</h3>
+                    <p>El reporte ha sido registrado y será revisado por el supervisor.</p>
+                    <button class="btn-primary" onclick="location.reload()">Crear otro reporte</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Sistema de Gestión de Seguridad Industrial</p>
+        </footer>
+    </div>
+
+    <!-- SUPABASE CLIENT -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- APP SCRIPT -->
+    <script src="app.js"></script>
+</body>
+</html>
