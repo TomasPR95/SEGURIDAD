@@ -4,6 +4,7 @@
 const SUPABASE_URL = 'https://dpzdlwwfvjoggejkaeiw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwemRsd3dmdmpvZ2dlamthZWl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTQ1MTYsImV4cCI6MjA5MzU3MDUxNn0.2oSGq1RgelrXimeg8WuO6lc0RYUFeBq-5hWy3ZccN2c';
 
+
 // Inicializar cliente de Supabase
 var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -636,7 +637,7 @@ function exportToExcel() {
         return;
     }
     
-    // Crear CSV (que Excel puede abrir)
+    // Crear CSV con separador de punto y coma (para Excel en español)
     const headers = ['Fecha', 'Tipo de Acción', 'Tipo', 'Área', 'Empleado', 'Descripción', 'Estado'];
     const rows = allReports.map(r => [
         new Date(r.created_at).toLocaleDateString('es-AR'),
@@ -644,14 +645,14 @@ function exportToExcel() {
         formatTipo(r.tipo),
         r.area,
         r.empleado,
-        r.descripcion.replace(/"/g, '""'), // Escapar comillas
+        r.descripcion.replace(/"/g, '""').replace(/\n/g, ' '), // Escapar comillas y saltos de línea
         r.estado === 'pendiente' ? 'Pendiente' : r.estado === 'en_proceso' ? 'En Proceso' : 'Resuelto'
     ]);
     
-    // Construir CSV
-    let csv = headers.join(',') + '\n';
+    // Construir CSV con punto y coma
+    let csv = headers.join(';') + '\n';
     rows.forEach(row => {
-        csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+        csv += row.map(cell => `"${cell}"`).join(';') + '\n';
     });
     
     // Descargar archivo
@@ -670,4 +671,6 @@ function exportToExcel() {
     
     alert(`✅ Exportados ${allReports.length} reportes a Excel`);
 }
+
+
 
