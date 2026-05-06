@@ -143,16 +143,15 @@ async function loadReports() {
 // ============================================
 function updateStatistics() {
     const stats = {
-        total: allReports.length,
-        pendientes: allReports.filter(r => r.estado === 'pendiente').length,
-        enProceso: allReports.filter(r => r.estado === 'en_proceso').length,
-        resueltos: allReports.filter(r => r.estado === 'resuelto').length,
+        reconocimientos: allReports.filter(r => r.tipo_accion === 'reconocimiento').length,
+        llamados: allReports.filter(r => r.tipo_accion === 'llamado_atencion').length,
     };
     
-    document.getElementById('stat-total').textContent = stats.total;
-    document.getElementById('stat-pending').textContent = stats.pendientes;
-    document.getElementById('stat-progress').textContent = stats.enProceso;
-    document.getElementById('stat-resolved').textContent = stats.resueltos;
+    const reconocimientosEl = document.getElementById('stat-reconocimientos');
+    const llamadosEl = document.getElementById('stat-llamados');
+    
+    if (reconocimientosEl) reconocimientosEl.textContent = stats.reconocimientos;
+    if (llamadosEl) llamadosEl.textContent = stats.llamados;
 }
 
 // ============================================
@@ -626,5 +625,49 @@ async function loadFormOptions() {
         areaSelect.innerHTML = '<option value="">Seleccionar área</option>' + 
             areas.map(a => `<option value="${a.nombre}">${a.nombre}</option>`).join('');
     }
+}
+
+// ============================================
+// EXPORTAR A EXCEL
+// ============================================
+function exportToExcel() {
+    if (allReports.length === 0) {
+        alert('No hay reportes para exportar');
+        return;
+    }
+    
+    // Crear CSV (que Excel puede abrir)
+    const headers = ['Fecha', 'Tipo de Acción', 'Tipo', 'Área', 'Empleado', 'Descripción', 'Estado'];
+    const rows = allReports.map(r => [
+        new Date(r.created_at).toLocaleDateString('es-AR'),
+        r.tipo_accion === 'reconocimiento' ? 'Reconocimiento' : 'Llamado de Atención',
+        formatTipo(r.tipo),
+        r.area,
+        r.empleado,
+        r.descripcion.replace(/"/g, '""'), // Escapar comillas
+        r.estado === 'pendiente' ? 'Pendiente' : r.estado === 'en_proceso' ? 'En Proceso' : 'Resuelto'
+    ]);
+    
+    // Construir CSV
+    let csv = headers.join(',') + '\n';
+    rows.forEach(row => {
+        csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+    });
+    
+    // Descargar archivo
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    const fecha = new Date().toISOString().split('T')[0];
+    link.setAttribute('href', url);
+    link.setAttribute('download', `reportes-safety-${fecha}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    alert(`✅ Exportados ${allReports.length} reportes a Excel`);
 }
 
