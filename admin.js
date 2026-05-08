@@ -73,6 +73,7 @@ function showAdminPanel() {
     
     // Cargar reportes y configurar funcionalidades
     loadReports();
+    loadFilters();  // ← AGREGADO: Cargar filtros dinámicos
     setupForm();
     subscribeToChanges();
 }
@@ -141,6 +142,40 @@ async function loadReports() {
 }
 
 // ============================================
+// CARGAR FILTROS DINÁMICOS
+// ============================================
+async function loadFilters() {
+    try {
+        const { data: tipos, error } = await supabase
+            .from('tipos_reporte')
+            .select('*')
+            .eq('activo', true)
+            .order('orden', { ascending: true });
+        
+        if (error || !tipos || tipos.length === 0) {
+            console.error('Error al cargar tipos para filtros:', error);
+            return;
+        }
+        
+        const filtersContainer = document.querySelector('.filters');
+        if (!filtersContainer) return;
+        
+        // Crear HTML de filtros dinámicos
+        const filtersHTML = `
+            <button class="filter-btn active" onclick="filterReports('all')">Todos</button>
+            ${tipos.map(tipo => `
+                <button class="filter-btn" onclick="filterReports('${tipo.codigo}')">${tipo.nombre}</button>
+            `).join('')}
+        `;
+        
+        filtersContainer.innerHTML = filtersHTML;
+        
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// ============================================
 // ACTUALIZAR ESTADÍSTICAS
 // ============================================
 function updateStatistics() {
@@ -184,7 +219,7 @@ function renderReports() {
             <div class="report-header">
                 <div class="report-type">
                     <span class="type-badge ${report.tipo}">
-                        ${formatTipo(report.tipo)}
+                        ${formatTipoDisplay(report.tipo)}
                     </span>
                     <span class="severity-badge ${report.tipo_accion || 'llamado_atencion'}">
                         ${report.tipo_accion === 'reconocimiento' ? '✅ Reconocimiento' : '⚠️ Llamado de Atención'}
@@ -225,14 +260,6 @@ function renderReports() {
             </div>
 
             <div class="report-footer">
-                <select 
-                    class="status-select ${report.estado}"
-                    onchange="updateStatus('${report.id}', this.value)"
-                >
-                    <option value="pendiente" ${report.estado === 'pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
-                    <option value="en_proceso" ${report.estado === 'en_proceso' ? 'selected' : ''}>🔄 En Proceso</option>
-                    <option value="resuelto" ${report.estado === 'resuelto' ? 'selected' : ''}>✅ Resuelto</option>
-                </select>
                 <button class="btn-delete" onclick="deleteReport('${report.id}')">🗑️ Eliminar</button>
             </div>
         </div>
@@ -251,35 +278,6 @@ function filterReports(filter) {
     event.target.classList.add('active');
     
     renderReports();
-}
-
-// ============================================
-// ACTUALIZAR ESTADO DE REPORTE
-// ============================================
-async function updateStatus(reportId, newStatus) {
-    try {
-        const { error } = await supabase
-            .from('reportes')
-            .update({ estado: newStatus })
-            .eq('id', reportId);
-        
-        if (error) {
-            console.error('Error al actualizar estado:', error);
-            showError('Error al actualizar estado');
-            return;
-        }
-        
-        const reportIndex = allReports.findIndex(r => r.id === reportId);
-        if (reportIndex !== -1) {
-            allReports[reportIndex].estado = newStatus;
-            updateStatistics();
-            renderReports();
-        }
-        
-    } catch (error) {
-        console.error('Error:', error);
-        showError('Error de conexión');
-    }
 }
 
 // ============================================
@@ -378,14 +376,34 @@ function subscribeToChanges() {
 // ============================================
 // UTILIDADES
 // ============================================
-function formatTipo(tipo) {
-    const tipos = {
+async function formatTipoDisplay(codigo) {
+    // Intentar obtener el nombre desde la base de datos
+    try {
+        const { data: tipos } = await supabase
+            .from('tipos_reporte')
+            .select('nombre, codigo')
+            .eq('codigo', codigo)
+            .single();
+        
+        if (tipos) {
+            return tipos.nombre.toUpperCase();
+        }
+    } catch (error) {
+        console.log('Usando nombre por defecto para:', codigo);
+    }
+    
+    // Fallback a nombres por defecto
+    const tiposDefault = {
         'acto_inseguro': 'ACTO INSEGURO',
         'apercibimiento': 'APERCIBIMIENTO',
         'falla_calidad': 'FALLA DE CALIDAD',
+        'seguridad': 'SEGURIDAD',
+        'inocuidad': 'INOCUIDAD',
+        'operaciones': 'OPERACIONES',
+        'calidad': 'CALIDAD',
         'otro': 'OTRO'
     };
-    return tipos[tipo] || tipo;
+    return tiposDefault[codigo] || codigo.toUpperCase();
 }
 
 function formatDate(dateString) {
@@ -670,6 +688,7 @@ function addTipo() {
             } else {
                 alert('✅ Tipo agregado correctamente');
                 loadTipos();
+                loadFilters(); // Recargar filtros
             }
         });
 }
@@ -690,6 +709,7 @@ function editTipo(id, codigoActual, nombreActual) {
             } else {
                 alert('✅ Tipo actualizado correctamente');
                 loadTipos();
+                loadFilters(); // Recargar filtros
             }
         });
 }
@@ -710,6 +730,7 @@ function deleteTipo(id, nombre) {
             } else {
                 alert('✅ Tipo eliminado correctamente');
                 loadTipos();
+                loadFilters(); // Recargar filtros
             }
         });
 }
@@ -762,24 +783,35 @@ async function loadFormOptions() {
 // ============================================
 // EXPORTAR A EXCEL
 // ============================================
-function exportToExcel() {
+async function exportToExcel() {
     if (allReports.length === 0) {
         alert('No hay reportes para exportar');
         return;
     }
     
+    // Obtener tipos para formatear correctamente
+    const { data: tipos } = await supabase
+        .from('tipos_reporte')
+        .select('codigo, nombre');
+    
+    const tiposMap = {};
+    if (tipos) {
+        tipos.forEach(t => {
+            tiposMap[t.codigo] = t.nombre;
+        });
+    }
+    
     // Crear CSV con separador de punto y coma (para Excel en español)
-    const headers = ['Fecha', 'Centro', 'Reportado por', 'Tipo de Acción', 'Tipo', 'Área', 'Empleado', 'Descripción', 'Estado'];
+    const headers = ['Fecha', 'Centro', 'Reportado por', 'Tipo de Acción', 'Tipo', 'Área', 'Empleado', 'Descripción'];
     const rows = allReports.map(r => [
         new Date(r.created_at).toLocaleDateString('es-AR'),
         r.centro_productivo || '',
         r.reportado_por || '',
         r.tipo_accion === 'reconocimiento' ? 'Reconocimiento' : 'Llamado de Atención',
-        formatTipo(r.tipo),
+        tiposMap[r.tipo] || r.tipo.toUpperCase(),
         r.area,
         r.empleado,
-        r.descripcion.replace(/"/g, '""').replace(/\n/g, ' '), // Escapar comillas y saltos de línea
-        r.estado === 'pendiente' ? 'Pendiente' : r.estado === 'en_proceso' ? 'En Proceso' : 'Resuelto'
+        r.descripcion.replace(/"/g, '""').replace(/\n/g, ' ')
     ]);
     
     // Construir CSV con punto y coma
