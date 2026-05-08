@@ -23,6 +23,7 @@ const ADMIN_USERS = {
 let allReports = [];
 let currentFilter = 'all';
 let isLoggedIn = false;
+let tiposReporteMap = {}; // Mapa para nombres de tipos
 
 // ============================================
 // INICIALIZACIÓN
@@ -73,7 +74,7 @@ function showAdminPanel() {
     
     // Cargar reportes y configurar funcionalidades
     loadReports();
-    loadFilters();  // ← AGREGADO: Cargar filtros dinámicos
+    loadFilters();
     setupForm();
     subscribeToChanges();
 }
@@ -156,6 +157,12 @@ async function loadFilters() {
             console.error('Error al cargar tipos para filtros:', error);
             return;
         }
+        
+        // Guardar mapa de tipos para usar en formatTipoDisplay
+        tiposReporteMap = {};
+        tipos.forEach(tipo => {
+            tiposReporteMap[tipo.codigo] = tipo.nombre;
+        });
         
         const filtersContainer = document.querySelector('.filters');
         if (!filtersContainer) return;
@@ -376,20 +383,10 @@ function subscribeToChanges() {
 // ============================================
 // UTILIDADES
 // ============================================
-async function formatTipoDisplay(codigo) {
-    // Intentar obtener el nombre desde la base de datos
-    try {
-        const { data: tipos } = await supabase
-            .from('tipos_reporte')
-            .select('nombre, codigo')
-            .eq('codigo', codigo)
-            .single();
-        
-        if (tipos) {
-            return tipos.nombre.toUpperCase();
-        }
-    } catch (error) {
-        console.log('Usando nombre por defecto para:', codigo);
+function formatTipoDisplay(codigo) {
+    // Intentar obtener el nombre del mapa cargado
+    if (tiposReporteMap[codigo]) {
+        return tiposReporteMap[codigo].toUpperCase();
     }
     
     // Fallback a nombres por defecto
