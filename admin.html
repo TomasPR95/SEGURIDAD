@@ -103,6 +103,7 @@
                     </div>
                     
                     <form id="report-form" class="report-form">
+                        <!-- PRIMERO: Tipo de Acción -->
                         <div class="form-group">
                             <label>¿Qué deseas reportar? *</label>
                             <div class="severity-options">
@@ -117,6 +118,22 @@
                             </div>
                         </div>
 
+                        <!-- SEGUNDO: Centro y Reportado por -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Centro Productivo *</label>
+                                <select id="centro_productivo" name="centro_productivo" required>
+                                    <option value="">Cargando...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Reportado por *</label>
+                                <input type="text" id="reportado_por" name="reportado_por" placeholder="Nombre completo" required>
+                            </div>
+                        </div>
+
+                        <!-- TERCERO: Tipo de Reporte -->
                         <div class="form-group">
                             <label>Tipo de Reporte *</label>
                             <select id="tipo" name="tipo" required>
@@ -124,6 +141,7 @@
                             </select>
                         </div>
 
+                        <!-- CUARTO: Área y Empleado -->
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Área *</label>
@@ -138,11 +156,13 @@
                             </div>
                         </div>
 
+                        <!-- QUINTO: Descripción -->
                         <div class="form-group">
                             <label>Descripción *</label>
                             <textarea id="descripcion" name="descripcion" placeholder="Describe lo sucedido con el mayor detalle posible..." rows="6" required></textarea>
                         </div>
 
+                        <!-- BOTONES -->
                         <div class="form-actions">
                             <button type="button" class="btn-secondary" onclick="showView('dashboard')">Cancelar</button>
                             <button type="submit" class="btn-primary">Guardar Reporte</button>
@@ -156,6 +176,16 @@
                 <div class="config-container">
                     <h2 style="font-size: 2.5rem; font-weight: 800; color: var(--color-primary); margin-bottom: 2rem;">⚙️ Configuración del Sistema</h2>
                     
+                    <!-- CENTROS PRODUCTIVOS -->
+                    <div class="config-section">
+                        <h3>🏭 Centros Productivos</h3>
+                        <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem;">Gestiona los centros productivos disponibles</p>
+                        <div class="config-list" id="centros-list">
+                            <div class="loading">Cargando centros...</div>
+                        </div>
+                        <button class="btn-small btn-add" onclick="addCentro()">+ Agregar Centro</button>
+                    </div>
+
                     <!-- ÁREAS / SECTORES -->
                     <div class="config-section">
                         <h3>🏭 Áreas / Sectores</h3>
