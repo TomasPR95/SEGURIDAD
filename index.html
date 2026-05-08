@@ -33,21 +33,9 @@
                 </div>
                 
                 <form id="report-form" class="report-form">
+                    <!-- PRIMERO: Tipo de Acción -->
                     <div class="form-group">
                         <label>¿Qué deseas reportar? *</label>
-<div class="form-row">
-    <div class="form-group">
-        <label>Centro Productivo *</label>
-        <select id="centro_productivo" name="centro_productivo" required>
-            <option value="">Cargando...</option>
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label>Reportado por *</label>
-        <input type="text" id="reportado_por" name="reportado_por" placeholder="Tu nombre completo" required>
-    </div>
-</div>
                         <div class="severity-options">
                             <label class="severity-option">
                                 <input type="radio" name="tipo_accion" value="reconocimiento" checked>
@@ -60,6 +48,22 @@
                         </div>
                     </div>
 
+                    <!-- SEGUNDO: Centro y Reportado por -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Centro Productivo *</label>
+                            <select id="centro_productivo" name="centro_productivo" required>
+                                <option value="">Cargando...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Reportado por *</label>
+                            <input type="text" id="reportado_por" name="reportado_por" placeholder="Tu nombre completo" required>
+                        </div>
+                    </div>
+
+                    <!-- TERCERO: Tipo de Reporte -->
                     <div class="form-group">
                         <label>Tipo de Reporte *</label>
                         <select id="tipo" name="tipo" required>
@@ -67,6 +71,7 @@
                         </select>
                     </div>
 
+                    <!-- CUARTO: Área y Empleado -->
                     <div class="form-row">
                         <div class="form-group">
                             <label>Área *</label>
@@ -81,11 +86,13 @@
                         </div>
                     </div>
 
+                    <!-- QUINTO: Descripción -->
                     <div class="form-group">
                         <label>Descripción *</label>
                         <textarea id="descripcion" name="descripcion" placeholder="Describe lo sucedido con el mayor detalle posible..." rows="6" required></textarea>
                     </div>
 
+                    <!-- BOTONES -->
                     <div class="form-actions">
                         <button type="reset" class="btn-secondary">Limpiar</button>
                         <button type="submit" class="btn-primary">Enviar Reporte</button>
