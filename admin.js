@@ -108,6 +108,7 @@ function showView(viewName) {
     } else if (viewName === 'config') {
         document.querySelectorAll('.nav-btn')[2].classList.add('active');
         // Cargar datos de configuración
+        loadCentros();
         loadAreas();
         loadTipos();
     }
@@ -196,6 +197,18 @@ function renderReports() {
             
             <div class="report-body">
                 <div class="report-info">
+                    ${report.centro_productivo ? `
+                    <div class="info-row">
+                        <span class="info-label">Centro:</span>
+                        <span class="info-value">${report.centro_productivo}</span>
+                    </div>
+                    ` : ''}
+                    ${report.reportado_por ? `
+                    <div class="info-row">
+                        <span class="info-label">Reportado por:</span>
+                        <span class="info-value">${report.reportado_por}</span>
+                    </div>
+                    ` : ''}
                     <div class="info-row">
                         <span class="info-label">Área:</span>
                         <span class="info-value">${report.area}</span>
@@ -317,6 +330,8 @@ function setupForm() {
             empleado: formData.get('empleado'),
             descripcion: formData.get('descripcion'),
             tipo_accion: formData.get('tipo_accion'),
+            centro_productivo: formData.get('centro_productivo'),
+            reportado_por: formData.get('reportado_por'),
             estado: 'pendiente'
         };
         
@@ -394,7 +409,106 @@ function showSuccess(message) {
 }
 
 // ============================================
-// GESTIÓN DE CONFIGURACIÓN
+// GESTIÓN DE CENTROS PRODUCTIVOS
+// ============================================
+
+// Cargar centros productivos
+async function loadCentros() {
+    try {
+        const { data, error } = await supabase
+            .from('centros_productivos')
+            .select('*')
+            .eq('activo', true)
+            .order('orden', { ascending: true });
+        
+        if (error) {
+            console.error('Error al cargar centros:', error);
+            return;
+        }
+        
+        const centrosList = document.getElementById('centros-list');
+        if (!centrosList) return;
+        
+        if (data.length === 0) {
+            centrosList.innerHTML = '<p style="color: var(--color-text-secondary);">No hay centros configurados</p>';
+            return;
+        }
+        
+        centrosList.innerHTML = data.map(centro => `
+            <div class="config-item">
+                <span>${centro.nombre}</span>
+                <div class="config-item-actions">
+                    <button class="btn-small btn-edit" onclick="editCentro(${centro.id}, '${centro.nombre.replace(/'/g, "\\'")}')">Editar</button>
+                    <button class="btn-small btn-remove" onclick="deleteCentro(${centro.id}, '${centro.nombre.replace(/'/g, "\\'")}')">Eliminar</button>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+// Agregar centro
+function addCentro() {
+    const nombre = prompt('Nombre del centro productivo:');
+    if (!nombre || nombre.trim() === '') return;
+    
+    supabase
+        .from('centros_productivos')
+        .insert([{ nombre: nombre.trim() }])
+        .then(({ error }) => {
+            if (error) {
+                alert('❌ Error al agregar centro: ' + error.message);
+            } else {
+                alert('✅ Centro agregado correctamente');
+                loadCentros();
+            }
+        });
+}
+
+// Editar centro
+function editCentro(id, nombreActual) {
+    const nuevoNombre = prompt('Nuevo nombre del centro:', nombreActual);
+    if (!nuevoNombre || nuevoNombre.trim() === '') return;
+    if (nuevoNombre === nombreActual) return;
+    
+    supabase
+        .from('centros_productivos')
+        .update({ nombre: nuevoNombre.trim() })
+        .eq('id', id)
+        .then(({ error }) => {
+            if (error) {
+                alert('❌ Error al actualizar centro: ' + error.message);
+            } else {
+                alert('✅ Centro actualizado correctamente');
+                loadCentros();
+            }
+        });
+}
+
+// Eliminar centro
+function deleteCentro(id, nombre) {
+    if (!confirm(`¿Eliminar el centro "${nombre}"?\n\nEsto no eliminará los reportes existentes, solo ocultará el centro del formulario.`)) {
+        return;
+    }
+    
+    supabase
+        .from('centros_productivos')
+        .update({ activo: false })
+        .eq('id', id)
+        .then(({ error }) => {
+            if (error) {
+                alert('❌ Error al eliminar centro: ' + error.message);
+            } else {
+                alert('✅ Centro eliminado correctamente');
+                loadCentros();
+            }
+        });
+}
+
+// ============================================
+// GESTIÓN DE ÁREAS
 // ============================================
 
 // Cargar áreas desde Supabase
@@ -425,46 +539,6 @@ async function loadAreas() {
                 <div class="config-item-actions">
                     <button class="btn-small btn-edit" onclick="editArea(${area.id}, '${area.nombre.replace(/'/g, "\\'")}')">Editar</button>
                     <button class="btn-small btn-remove" onclick="deleteArea(${area.id}, '${area.nombre.replace(/'/g, "\\'")}')">Eliminar</button>
-                </div>
-            </div>
-        `).join('');
-        
-    } catch (error) {
-        console.error('Error:', error);
-    }
-}
-
-// Cargar tipos de reporte
-async function loadTipos() {
-    try {
-        const { data, error } = await supabase
-            .from('tipos_reporte')
-            .select('*')
-            .eq('activo', true)
-            .order('orden', { ascending: true });
-        
-        if (error) {
-            console.error('Error al cargar tipos:', error);
-            return;
-        }
-        
-        const tiposList = document.getElementById('tipos-list');
-        if (!tiposList) return;
-        
-        if (data.length === 0) {
-            tiposList.innerHTML = '<p style="color: var(--color-text-secondary);">No hay tipos configurados</p>';
-            return;
-        }
-        
-        tiposList.innerHTML = data.map(tipo => `
-            <div class="config-item">
-                <div>
-                    <strong>${tipo.nombre}</strong>
-                    <br><small style="color: var(--color-text-secondary);">Código: ${tipo.codigo}</small>
-                </div>
-                <div class="config-item-actions">
-                    <button class="btn-small btn-edit" onclick="editTipo(${tipo.id}, '${tipo.codigo}', '${tipo.nombre.replace(/'/g, "\\'")}')">Editar</button>
-                    <button class="btn-small btn-remove" onclick="deleteTipo(${tipo.id}, '${tipo.nombre.replace(/'/g, "\\'")}')">Eliminar</button>
                 </div>
             </div>
         `).join('');
@@ -530,6 +604,50 @@ function deleteArea(id, nombre) {
                 loadAreas();
             }
         });
+}
+
+// ============================================
+// GESTIÓN DE TIPOS
+// ============================================
+
+// Cargar tipos de reporte
+async function loadTipos() {
+    try {
+        const { data, error } = await supabase
+            .from('tipos_reporte')
+            .select('*')
+            .eq('activo', true)
+            .order('orden', { ascending: true });
+        
+        if (error) {
+            console.error('Error al cargar tipos:', error);
+            return;
+        }
+        
+        const tiposList = document.getElementById('tipos-list');
+        if (!tiposList) return;
+        
+        if (data.length === 0) {
+            tiposList.innerHTML = '<p style="color: var(--color-text-secondary);">No hay tipos configurados</p>';
+            return;
+        }
+        
+        tiposList.innerHTML = data.map(tipo => `
+            <div class="config-item">
+                <div>
+                    <strong>${tipo.nombre}</strong>
+                    <br><small style="color: var(--color-text-secondary);">Código: ${tipo.codigo}</small>
+                </div>
+                <div class="config-item-actions">
+                    <button class="btn-small btn-edit" onclick="editTipo(${tipo.id}, '${tipo.codigo}', '${tipo.nombre.replace(/'/g, "\\'")}')">Editar</button>
+                    <button class="btn-small btn-remove" onclick="deleteTipo(${tipo.id}, '${tipo.nombre.replace(/'/g, "\\'")}')">Eliminar</button>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error:', error);
+    }
 }
 
 // Agregar tipo
@@ -600,6 +718,19 @@ function deleteTipo(id, nombre) {
 // CARGAR OPCIONES DINÁMICAS EN FORMULARIO
 // ============================================
 async function loadFormOptions() {
+    // Cargar centros productivos
+    const { data: centros } = await supabase
+        .from('centros_productivos')
+        .select('*')
+        .eq('activo', true)
+        .order('orden', { ascending: true});
+    
+    const centroSelect = document.getElementById('centro_productivo');
+    if (centroSelect && centros && centros.length > 0) {
+        centroSelect.innerHTML = '<option value="">Seleccionar centro</option>' + 
+            centros.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join('');
+    }
+
     // Cargar tipos de reporte
     const { data: tipos } = await supabase
         .from('tipos_reporte')
@@ -638,9 +769,11 @@ function exportToExcel() {
     }
     
     // Crear CSV con separador de punto y coma (para Excel en español)
-    const headers = ['Fecha', 'Tipo de Acción', 'Tipo', 'Área', 'Empleado', 'Descripción', 'Estado'];
+    const headers = ['Fecha', 'Centro', 'Reportado por', 'Tipo de Acción', 'Tipo', 'Área', 'Empleado', 'Descripción', 'Estado'];
     const rows = allReports.map(r => [
         new Date(r.created_at).toLocaleDateString('es-AR'),
+        r.centro_productivo || '',
+        r.reportado_por || '',
         r.tipo_accion === 'reconocimiento' ? 'Reconocimiento' : 'Llamado de Atención',
         formatTipo(r.tipo),
         r.area,
@@ -671,6 +804,5 @@ function exportToExcel() {
     
     alert(`✅ Exportados ${allReports.length} reportes a Excel`);
 }
-
 
 
